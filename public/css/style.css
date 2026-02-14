@@ -1,0 +1,196 @@
+/* SWC Inventory Control - Clean dark space theme */
+
+:root {
+  --swc-bg: #0d1117;
+  --swc-surface: #161b22;
+  --swc-border: #30363d;
+  --swc-accent: #0dcaf0;
+  --swc-accent-dim: rgba(13, 202, 240, 0.15);
+  --swc-text: #c9d1d9;
+  --swc-text-muted: #8b949e;
+}
+
+body {
+  background-color: var(--swc-bg);
+  color: var(--swc-text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  /* Subtle star field background */
+  background-image:
+    radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,0.08) 50%, transparent 50%),
+    radial-gradient(1px 1px at 40% 60%, rgba(255,255,255,0.05) 50%, transparent 50%),
+    radial-gradient(1px 1px at 70% 30%, rgba(255,255,255,0.06) 50%, transparent 50%),
+    radial-gradient(1px 1px at 90% 80%, rgba(255,255,255,0.04) 50%, transparent 50%),
+    radial-gradient(1px 1px at 25% 85%, rgba(255,255,255,0.07) 50%, transparent 50%),
+    radial-gradient(1px 1px at 55% 15%, rgba(255,255,255,0.05) 50%, transparent 50%),
+    radial-gradient(1px 1px at 80% 50%, rgba(255,255,255,0.06) 50%, transparent 50%);
+  background-size: 200px 200px, 300px 300px, 250px 250px, 350px 350px, 280px 280px, 320px 320px, 220px 220px;
+}
+
+main {
+  flex: 1;
+}
+
+/* Navbar */
+.navbar {
+  background-color: var(--swc-surface) !important;
+}
+
+.navbar-brand {
+  font-size: 1.1rem;
+  letter-spacing: 0.5px;
+}
+
+/* Cards */
+.card {
+  transition: border-color 0.2s ease;
+}
+
+.card:hover {
+  border-color: var(--swc-accent) !important;
+}
+
+/* Tables */
+.table-dark {
+  --bs-table-bg: var(--swc-surface);
+  --bs-table-hover-bg: rgba(13, 202, 240, 0.05);
+  --bs-table-border-color: var(--swc-border);
+}
+
+/* Form controls in dark mode */
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--swc-accent);
+  box-shadow: 0 0 0 0.15rem var(--swc-accent-dim);
+}
+
+/* Badges */
+.badge.bg-secondary {
+  background-color: var(--swc-border) !important;
+  font-weight: 500;
+}
+
+/* Accent glow on key elements */
+.text-info {
+  color: var(--swc-accent) !important;
+}
+
+.btn-info {
+  background-color: var(--swc-accent);
+  border-color: var(--swc-accent);
+  color: #000;
+}
+
+.btn-info:hover {
+  background-color: #31d2f7;
+  border-color: #31d2f7;
+  color: #000;
+}
+
+.btn-outline-info {
+  color: var(--swc-accent);
+  border-color: var(--swc-accent);
+}
+
+.btn-outline-info:hover {
+  background-color: var(--swc-accent);
+  color: #000;
+}
+
+/* Nav pills active state */
+.nav-pills .nav-link.active {
+  font-weight: 600;
+}
+
+.nav-pills .nav-link:not(.active):hover {
+  color: var(--swc-accent) !important;
+}
+
+/* Min height for centering hero content */
+.min-vh-75 {
+  min-height: 75vh;
+}
+
+/* Subtle scan-line effect on footer */
+.star-dust {
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+}
+
+/* Alerts */
+.alert {
+  border: none;
+  border-radius: 4px;
+}
+
+/* Modals */
+.modal-content {
+  border: 1px solid var(--swc-border);
+}
+
+/* Pagination */
+.page-link {
+  background-color: var(--swc-surface);
+  border-color: var(--swc-border);
+  color: var(--swc-text);
+}
+
+.page-link:hover {
+  background-color: var(--swc-border);
+  color: var(--swc-accent);
+}
+
+.page-item.active .page-link {
+  background-color: var(--swc-accent);
+  border-color: var(--swc-accent);
+  color: #000;
+}
+
+.page-item.disabled .page-link {
+  background-color: var(--swc-bg);
+  border-color: var(--swc-border);
+  color: var(--swc-text-muted);
+}
+
+/* Check inputs */
+.form-check-input:checked {
+  background-color: var(--swc-accent);
+  border-color: var(--swc-accent);
+}
+
+/* Breadcrumbs */
+.breadcrumb {
+  background: transparent;
+  padding: 0;
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+  color: var(--swc-text-muted);
+}
+
+/* Loading indicator */
+.spinner-border {
+  color: var(--swc-accent);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--swc-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--swc-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--swc-text-muted);
+}

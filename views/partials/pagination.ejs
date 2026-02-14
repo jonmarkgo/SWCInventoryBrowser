@@ -1,0 +1,21 @@
+<% if (typeof pages !== 'undefined' && pages > 1) { %>
+  <nav>
+    <ul class="pagination pagination-sm justify-content-center">
+      <li class="page-item <%= page <= 1 ? 'disabled' : '' %>">
+        <a class="page-link" href="?<%= new URLSearchParams({...query, page: page - 1}).toString() %>">Prev</a>
+      </li>
+      <% for (let i = 1; i <= pages; i++) { %>
+        <% if (i === 1 || i === pages || (i >= page - 2 && i <= page + 2)) { %>
+          <li class="page-item <%= i === page ? 'active' : '' %>">
+            <a class="page-link" href="?<%= new URLSearchParams({...query, page: i}).toString() %>"><%= i %></a>
+          </li>
+        <% } else if (i === page - 3 || i === page + 3) { %>
+          <li class="page-item disabled"><span class="page-link">...</span></li>
+        <% } %>
+      <% } %>
+      <li class="page-item <%= page >= pages ? 'disabled' : '' %>">
+        <a class="page-link" href="?<%= new URLSearchParams({...query, page: page + 1}).toString() %>">Next</a>
+      </li>
+    </ul>
+  </nav>
+<% } %>

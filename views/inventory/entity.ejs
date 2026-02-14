@@ -1,0 +1,121 @@
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/inventory" class="text-info">Inventory</a></li>
+    <li class="breadcrumb-item"><a href="/inventory/<%= entityType %>" class="text-info text-capitalize"><%= entityType %></a></li>
+    <li class="breadcrumb-item active"><%= entity.entity_name || entity.entity_uid %></li>
+  </ol>
+</nav>
+
+<div class="row g-4">
+  <div class="col-md-4 text-center">
+    <% if (entity.entity_image) { %>
+      <img src="<%= entity.entity_image %>" alt="<%= entity.entity_name %>" class="img-fluid rounded mb-3" style="max-width: 200px;">
+    <% } else { %>
+      <div class="bg-dark border border-secondary rounded d-flex align-items-center justify-content-center mx-auto mb-3" style="width:200px;height:200px;">
+        <i class="bi bi-box display-1 text-muted"></i>
+      </div>
+    <% } %>
+    <h4><%= entity.entity_name || 'Unnamed' %></h4>
+    <p class="text-muted"><%= entityType %> &mdash; <%= entity.entity_uid %></p>
+  </div>
+
+  <div class="col-md-8">
+    <!-- Groups -->
+    <div class="card bg-dark border-secondary mb-3">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Groups</span>
+        <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#addToGroupModal">
+          <i class="bi bi-plus"></i> Add
+        </button>
+      </div>
+      <div class="card-body">
+        <% if (itemGroups.length === 0) { %>
+          <p class="text-muted mb-0">Not in any group yet.</p>
+        <% } else { %>
+          <div class="d-flex flex-wrap gap-2">
+            <% itemGroups.forEach(g => { %>
+              <span class="badge bg-secondary d-flex align-items-center gap-1">
+                <%= g.name %>
+                <form method="POST" action="/groups/<%= g.id %>/items/remove" class="d-inline">
+                  <input type="hidden" name="entity_type" value="<%= entityType %>">
+                  <input type="hidden" name="entity_uid" value="<%= entity.entity_uid %>">
+                  <input type="hidden" name="redirect" value="/inventory/<%= entityType %>/<%= entity.entity_uid %>">
+                  <button type="submit" class="btn-close btn-close-white" style="font-size: 0.6em;" title="Remove from group"></button>
+                </form>
+              </span>
+            <% }) %>
+          </div>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Tags -->
+    <div class="card bg-dark border-secondary mb-3">
+      <div class="card-header">Tags (SWC API)</div>
+      <div class="card-body">
+        <% const tags = entity.entity_data?.tags || []; %>
+        <div class="d-flex flex-wrap gap-2 mb-2" id="tag-list">
+          <% tags.forEach(tag => { %>
+            <span class="badge bg-info text-dark d-flex align-items-center gap-1">
+              <%= tag %>
+              <button class="btn-close btn-close-white remove-tag-btn" style="font-size: 0.5em;"
+                      data-entity-type="<%= entityType %>" data-entity-uid="<%= entity.entity_uid %>" data-tag="<%= tag %>">
+              </button>
+            </span>
+          <% }) %>
+        </div>
+        <form class="d-flex gap-2" id="add-tag-form"
+              data-entity-type="<%= entityType %>" data-entity-uid="<%= entity.entity_uid %>">
+          <input type="text" class="form-control form-control-sm bg-dark text-light border-secondary"
+                 name="tag" placeholder="Add tag..." style="max-width: 200px;" required>
+          <button type="submit" class="btn btn-sm btn-outline-info">Add Tag</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Entity Data -->
+    <div class="card bg-dark border-secondary">
+      <div class="card-header">
+        <a class="text-decoration-none text-light" data-bs-toggle="collapse" href="#entityData">
+          Raw Data <i class="bi bi-chevron-down"></i>
+        </a>
+      </div>
+      <div class="collapse" id="entityData">
+        <div class="card-body">
+          <pre class="text-muted small mb-0" style="max-height: 400px; overflow: auto;"><%= JSON.stringify(entity.entity_data, null, 2) %></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add to Group Modal -->
+<div class="modal fade" id="addToGroupModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content bg-dark border-secondary">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title">Add to Group</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="/api/group-item">
+        <div class="modal-body">
+          <input type="hidden" name="entity_type" value="<%= entityType %>">
+          <input type="hidden" name="entity_uid" value="<%= entity.entity_uid %>">
+          <input type="hidden" name="entity_name" value="<%= entity.entity_name %>">
+          <input type="hidden" name="entity_image" value="<%= entity.entity_image %>">
+          <input type="hidden" name="redirect" value="/inventory/<%= entityType %>/<%= entity.entity_uid %>">
+          <select name="group_id" class="form-select bg-dark text-light border-secondary" required>
+            <option value="">Select a group...</option>
+            <% groups.forEach(g => { %>
+              <option value="<%= g.id %>"><%= g.name %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="modal-footer border-secondary">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-info">Add to Group</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

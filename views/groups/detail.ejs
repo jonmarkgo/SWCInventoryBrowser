@@ -1,0 +1,140 @@
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/groups" class="text-info">Groups</a></li>
+    <li class="breadcrumb-item active"><%= group.name %></li>
+  </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-start mb-4">
+  <div>
+    <h2><i class="bi bi-collection text-info"></i> <%= group.name %></h2>
+    <% if (group.description) { %>
+      <p class="text-muted"><%= group.description %></p>
+    <% } %>
+  </div>
+  <div class="d-flex gap-2">
+    <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#editGroupModal">
+      <i class="bi bi-pencil"></i> Edit
+    </button>
+    <a href="/inventory" class="btn btn-sm btn-outline-light">
+      <i class="bi bi-plus"></i> Add Items
+    </a>
+  </div>
+</div>
+
+<!-- Users with access -->
+<div class="card bg-dark border-secondary mb-4">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span>Users with Access</span>
+    <a href="/users" class="btn btn-sm btn-outline-info">Manage</a>
+  </div>
+  <div class="card-body p-0">
+    <% if (groupUsers.length === 0) { %>
+      <p class="text-muted p-3 mb-0">No sub-users have access to this group yet.</p>
+    <% } else { %>
+      <table class="table table-dark table-sm mb-0">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th class="text-center">View</th>
+            <th class="text-center">Assign</th>
+            <th class="text-center">Rename</th>
+            <th class="text-center">Makeover</th>
+            <th class="text-center">Tag</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% groupUsers.forEach(u => { %>
+            <tr>
+              <td><%= u.swc_name %></td>
+              <td class="text-center"><%= u.can_view ? '<i class="bi bi-check-circle text-success"></i>' : '<i class="bi bi-x-circle text-muted"></i>' %></td>
+              <td class="text-center"><%= u.can_assign ? '<i class="bi bi-check-circle text-success"></i>' : '<i class="bi bi-x-circle text-muted"></i>' %></td>
+              <td class="text-center"><%= u.can_rename ? '<i class="bi bi-check-circle text-success"></i>' : '<i class="bi bi-x-circle text-muted"></i>' %></td>
+              <td class="text-center"><%= u.can_makeover ? '<i class="bi bi-check-circle text-success"></i>' : '<i class="bi bi-x-circle text-muted"></i>' %></td>
+              <td class="text-center"><%= u.can_tag ? '<i class="bi bi-check-circle text-success"></i>' : '<i class="bi bi-x-circle text-muted"></i>' %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } %>
+  </div>
+</div>
+
+<!-- Group Items -->
+<div class="card bg-dark border-secondary">
+  <div class="card-header"><%= items.length %> Items</div>
+  <div class="card-body p-0">
+    <% if (items.length === 0) { %>
+      <p class="text-muted p-3 mb-0">No items in this group. <a href="/inventory" class="text-info">Browse inventory</a> to add some.</p>
+    <% } else { %>
+      <table class="table table-dark table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th style="width:40px;"></th>
+            <th>Name</th>
+            <th>Type</th>
+            <th>UID</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% items.forEach(item => { %>
+            <tr>
+              <td>
+                <% if (item.entity_image) { %>
+                  <img src="<%= item.entity_image %>" alt="" class="rounded" style="width:32px; height:32px; object-fit:cover;">
+                <% } else { %>
+                  <i class="bi bi-box text-muted"></i>
+                <% } %>
+              </td>
+              <td>
+                <a href="/inventory/<%= item.entity_type %>/<%= item.entity_uid %>" class="text-info text-decoration-none">
+                  <%= item.entity_name || 'Unnamed' %>
+                </a>
+              </td>
+              <td class="text-capitalize text-muted"><%= item.entity_type %></td>
+              <td class="text-muted small"><%= item.entity_uid %></td>
+              <td class="text-end">
+                <form method="POST" action="/groups/<%= group.id %>/items/<%= item.id %>/remove" class="d-inline">
+                  <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove from group">
+                    <i class="bi bi-x-lg"></i>
+                  </button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } %>
+  </div>
+</div>
+
+<!-- Edit Group Modal -->
+<div class="modal fade" id="editGroupModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content bg-dark border-secondary">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title">Edit Group</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="/groups/<%= group.id %>/edit">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Group Name</label>
+            <input type="text" class="form-control bg-dark text-light border-secondary"
+                   name="name" value="<%= group.name %>" required maxlength="100">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Description</label>
+            <textarea class="form-control bg-dark text-light border-secondary"
+                      name="description" rows="2"><%= group.description || '' %></textarea>
+          </div>
+        </div>
+        <div class="modal-footer border-secondary">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-info">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,28 @@
+{
+  "name": "swc-inventory-control",
+  "version": "1.0.0",
+  "description": "Star Wars Combine Inventory Control Panel for faction leaders",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [
+    "swcombine",
+    "star-wars-combine",
+    "inventory"
+  ],
+  "license": "ISC",
+  "dependencies": {
+    "better-sqlite3": "^12.6.2",
+    "crypto-random-string": "^5.0.0",
+    "dotenv": "^17.3.1",
+    "ejs": "^4.0.1",
+    "express": "^5.2.1",
+    "express-ejs-layouts": "^2.5.1",
+    "express-session": "^1.19.0",
+    "knex": "^3.1.0",
+    "swcombine-sdk": "^1.6.0"
+  }
+}

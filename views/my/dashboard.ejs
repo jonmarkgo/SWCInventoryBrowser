@@ -1,0 +1,39 @@
+<h2 class="mb-4"><i class="bi bi-speedometer2 text-info"></i> My Dashboard</h2>
+
+<p class="text-muted mb-4">Welcome, <strong><%= user.swc_name %></strong>. Below are the inventory groups you have access to.</p>
+
+<% if (groups.length === 0) { %>
+  <div class="text-center text-muted py-5">
+    <i class="bi bi-lock display-4"></i>
+    <p class="mt-2">You don't have access to any groups yet. Ask the faction leader to grant you permissions.</p>
+  </div>
+<% } else { %>
+  <div class="row g-3">
+    <% groups.forEach(g => { %>
+      <div class="col-md-4">
+        <div class="card bg-dark border-secondary h-100">
+          <div class="card-body">
+            <h5 class="card-title">
+              <a href="/my/groups/<%= g.id %>" class="text-info text-decoration-none"><%= g.name %></a>
+            </h5>
+            <% if (g.description) { %>
+              <p class="text-muted small mb-2"><%= g.description %></p>
+            <% } %>
+            <div class="mb-2">
+              <span class="badge bg-secondary"><%= g.item_count %> items</span>
+            </div>
+            <div class="d-flex flex-wrap gap-1">
+              <% if (g.can_assign) { %><span class="badge bg-info bg-opacity-25 text-info">Assign</span><% } %>
+              <% if (g.can_rename) { %><span class="badge bg-info bg-opacity-25 text-info">Rename</span><% } %>
+              <% if (g.can_makeover) { %><span class="badge bg-info bg-opacity-25 text-info">Makeover</span><% } %>
+              <% if (g.can_tag) { %><span class="badge bg-info bg-opacity-25 text-info">Tag</span><% } %>
+            </div>
+          </div>
+          <div class="card-footer border-secondary">
+            <a href="/my/groups/<%= g.id %>" class="btn btn-sm btn-outline-info">View Items</a>
+          </div>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+<% } %>

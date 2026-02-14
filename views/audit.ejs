@@ -1,0 +1,61 @@
+<h2 class="mb-4"><i class="bi bi-journal-text text-info"></i> Audit Log</h2>
+
+<form method="GET" action="/audit" class="row g-2 mb-4">
+  <div class="col-auto">
+    <input type="text" name="action" class="form-control form-control-sm bg-dark text-light border-secondary"
+           placeholder="Filter by action..." value="<%= filters.action || '' %>">
+  </div>
+  <div class="col-auto">
+    <select name="entity_type" class="form-select form-select-sm bg-dark text-light border-secondary">
+      <option value="">All types</option>
+      <% entityTypes.forEach(t => { %>
+        <option value="<%= t %>" <%= filters.entityType === t ? 'selected' : '' %>><%= t %></option>
+      <% }) %>
+    </select>
+  </div>
+  <div class="col-auto">
+    <button type="submit" class="btn btn-sm btn-outline-info">Filter</button>
+    <% if (filters.action || filters.entityType) { %>
+      <a href="/audit" class="btn btn-sm btn-outline-secondary">Clear</a>
+    <% } %>
+  </div>
+</form>
+
+<% if (rows.length === 0) { %>
+  <div class="text-center text-muted py-5">
+    <i class="bi bi-journal display-4"></i>
+    <p class="mt-2">No audit log entries yet.</p>
+  </div>
+<% } else { %>
+  <div class="table-responsive">
+    <table class="table table-dark table-sm table-hover">
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>User</th>
+          <th>Action</th>
+          <th>Entity</th>
+          <th>Details</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% rows.forEach(row => { %>
+          <tr>
+            <td class="text-muted small text-nowrap"><%= new Date(row.created_at).toLocaleString() %></td>
+            <td><%= row.user_name || 'System' %></td>
+            <td><span class="badge bg-secondary"><%= row.action %></span></td>
+            <td class="small">
+              <% if (row.entity_type && row.entity_uid) { %>
+                <span class="text-capitalize"><%= row.entity_type %></span>
+                <span class="text-muted"><%= row.entity_uid %></span>
+              <% } %>
+            </td>
+            <td class="text-muted small"><%= row.details %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+
+  <%- include('partials/pagination', { page, pages, query: { action: filters.action || '', entity_type: filters.entityType || '' } }) %>
+<% } %>

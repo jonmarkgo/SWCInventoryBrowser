@@ -1,0 +1,89 @@
+<h2 class="mb-4"><i class="bi bi-speedometer2 text-info"></i> Leader Dashboard</h2>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card bg-dark border-secondary">
+      <div class="card-body text-center">
+        <h3 class="text-info mb-0"><%= summary.totalItems %></h3>
+        <small class="text-muted">Cached Inventory Items</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card bg-dark border-secondary">
+      <div class="card-body text-center">
+        <h3 class="text-info mb-0"><%= summary.totalGroups %></h3>
+        <small class="text-muted">Virtual Groups</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card bg-dark border-secondary">
+      <div class="card-body text-center">
+        <h3 class="text-info mb-0"><%= summary.totalUsers %></h3>
+        <small class="text-muted">Sub-users</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-md-8">
+    <div class="card bg-dark border-secondary">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Inventory Cache Status</span>
+        <form method="POST" action="/inventory/refresh" class="d-inline">
+          <button type="submit" class="btn btn-sm btn-outline-info">
+            <i class="bi bi-arrow-clockwise"></i> Refresh All
+          </button>
+        </form>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-dark table-hover mb-0">
+          <thead>
+            <tr><th>Type</th><th class="text-end">Count</th><th class="text-end">Last Updated</th></tr>
+          </thead>
+          <tbody>
+            <% if (inventorySummary.length === 0) { %>
+              <tr><td colspan="3" class="text-center text-muted py-3">No inventory cached yet. Click Refresh All to load.</td></tr>
+            <% } else { %>
+              <% inventorySummary.forEach(row => { %>
+                <tr>
+                  <td>
+                    <a href="/inventory/<%= row.entity_type %>" class="text-info text-decoration-none text-capitalize">
+                      <%= row.entity_type %>
+                    </a>
+                  </td>
+                  <td class="text-end"><%= row.count %></td>
+                  <td class="text-end text-muted small">
+                    <%= row.last_cached ? new Date(row.last_cached).toLocaleString() : 'Never' %>
+                  </td>
+                </tr>
+              <% }) %>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card bg-dark border-secondary">
+      <div class="card-header">Quick Actions</div>
+      <div class="list-group list-group-flush">
+        <a href="/groups" class="list-group-item list-group-item-action bg-dark text-light border-secondary">
+          <i class="bi bi-collection text-info"></i> Manage Groups
+        </a>
+        <a href="/inventory" class="list-group-item list-group-item-action bg-dark text-light border-secondary">
+          <i class="bi bi-archive text-info"></i> Browse Inventory
+        </a>
+        <a href="/users" class="list-group-item list-group-item-action bg-dark text-light border-secondary">
+          <i class="bi bi-people text-info"></i> Manage Users
+        </a>
+        <a href="/audit" class="list-group-item list-group-item-action bg-dark text-light border-secondary">
+          <i class="bi bi-journal-text text-info"></i> View Audit Log
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
