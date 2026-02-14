@@ -171,7 +171,3 @@ The database file and tables are created automatically. To reset, delete `data/i
 - Materials don't have individual UIDs -- they're identified by type + location
 - SWC API rate limit: 600 requests/hour
 - OAuth scopes requested: faction inventory (all types), faction read, faction members, character auth, character read
-
-## License
-
-ISC
