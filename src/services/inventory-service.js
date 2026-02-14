@@ -7,8 +7,7 @@ const ENTITY_TYPES = [
   'items', 'npcs', 'droids', 'creatures', 'materials'
 ];
 
-// Cache TTL: 6 hours (inventory doesn't change frequently; manual refresh available)
-const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+// Cache persists indefinitely until manually refreshed
 
 // SWC API wraps entities in {attributes, value} - unwrap to get the actual data
 function unwrapEntity(raw) {
@@ -36,16 +35,12 @@ function extractEntityFields(entity, entityType, index) {
   return { uid: String(uid), name, image };
 }
 
-async function isCacheStale(entityType, ownerUid) {
+async function isCacheEmpty(entityType, ownerUid) {
   const db = getDb();
   const row = await db('inventory_cache')
     .where({ entity_type: entityType, owner_uid: ownerUid })
-    .max('cached_at as last_cached')
     .first();
-
-  if (!row?.last_cached) return true;
-  const cachedAt = new Date(row.last_cached).getTime();
-  return (Date.now() - cachedAt) > CACHE_TTL_MS;
+  return !row;
 }
 
 async function getCacheAge(entityType, ownerUid) {
@@ -150,9 +145,9 @@ async function fetchAndCacheEntities(ownerUid, entityType) {
 export async function getInventory(ownerUid, entityType, { forceRefresh = false, page = 1, limit = 50, search = '' } = {}) {
   const db = getDb();
 
-  // Refresh cache if stale or forced
-  if (forceRefresh || await isCacheStale(entityType, ownerUid)) {
-    const reason = forceRefresh ? 'forced refresh' : 'cache stale';
+  // Refresh cache if forced or never fetched
+  if (forceRefresh || await isCacheEmpty(entityType, ownerUid)) {
+    const reason = forceRefresh ? 'forced refresh' : 'never fetched';
     console.log(`[inventory] Cache miss for ${entityType} (${reason}), fetching from API...`);
     try {
       await fetchAndCacheEntities(ownerUid, entityType);
