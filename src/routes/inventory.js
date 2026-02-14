@@ -3,7 +3,7 @@ import { requireLeader } from '../middleware/auth.js';
 import { setFlash } from '../middleware/flash.js';
 import { getInventory, getEntity, refreshAll, ENTITY_TYPES } from '../services/inventory-service.js';
 import { getGroupsForItem, getAllGroups } from '../services/group-service.js';
-import { getLeaderUid } from '../swc-client.js';
+import { getFactionUid } from '../swc-client.js';
 
 const router = Router();
 
@@ -19,15 +19,15 @@ router.get('/:type', requireLeader, async (req, res) => {
     return res.status(404).render('error', { title: 'Not Found', message: 'Invalid entity type.' });
   }
 
-  const leaderUid = await getLeaderUid();
-  if (!leaderUid) {
-    setFlash(req, 'warning', 'Leader token not set. Please re-authenticate.');
-    return res.redirect('/');
+  const factionUid = await getFactionUid();
+  if (!factionUid) {
+    setFlash(req, 'warning', 'No faction configured. Please set your faction in the dashboard.');
+    return res.redirect('/dashboard');
   }
 
   const page = parseInt(req.query.page) || 1;
   const search = req.query.search || '';
-  const result = await getInventory(leaderUid, currentType, { page, search });
+  const result = await getInventory(factionUid, currentType, { page, search });
 
   // Build a map of groups for displayed items
   const groupMap = {};
@@ -76,9 +76,9 @@ router.get('/:type/:uid', requireLeader, async (req, res) => {
 
 // POST /inventory/refresh - refresh cache
 router.post('/refresh', requireLeader, async (req, res) => {
-  const leaderUid = await getLeaderUid();
-  if (!leaderUid) {
-    setFlash(req, 'warning', 'Leader token not set.');
+  const factionUid = await getFactionUid();
+  if (!factionUid) {
+    setFlash(req, 'warning', 'No faction configured. Please set your faction in the dashboard.');
     return res.redirect('/dashboard');
   }
 
@@ -86,16 +86,11 @@ router.post('/refresh', requireLeader, async (req, res) => {
 
   try {
     if (specificType && ENTITY_TYPES.includes(specificType)) {
-      const { getLeaderClient } = await import('../swc-client.js');
-      const client = getLeaderClient();
-      if (!client) throw new Error('Not authenticated');
-      // Refresh just this type
-      const { getInventory: inv } = await import('../services/inventory-service.js');
-      await inv(leaderUid, specificType, { forceRefresh: true });
+      await getInventory(factionUid, specificType, { forceRefresh: true });
       setFlash(req, 'success', `${specificType} cache refreshed.`);
       return res.redirect(`/inventory/${specificType}`);
     } else {
-      await refreshAll(leaderUid);
+      await refreshAll(factionUid);
       setFlash(req, 'success', 'All inventory caches refreshed.');
       return res.redirect('/dashboard');
     }

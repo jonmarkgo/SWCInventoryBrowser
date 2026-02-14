@@ -8,5 +8,7 @@ export const config = {
   swc: {
     clientId: process.env.SWC_CLIENT_ID,
     clientSecret: process.env.SWC_CLIENT_SECRET,
+    redirectUri: process.env.SWC_REDIRECT_URI || null, // auto-derived from BASE_URL if not set
   },
+  inventoryFetchLimit: parseInt(process.env.INVENTORY_FETCH_LIMIT || '0', 10) || 0, // 0 = no limit
 };

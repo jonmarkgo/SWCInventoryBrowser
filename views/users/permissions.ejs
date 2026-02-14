@@ -32,19 +32,19 @@
             <tr>
               <td><%= g.name %></td>
               <td class="text-center">
-                <input type="checkbox" class="form-check-input" name="perms[<%= g.id %>][can_view]" value="1" <%= perm.can_view ? 'checked' : '' %>>
+                <input type="checkbox" class="form-check-input" name="perms[g<%= g.id %>][can_view]" value="1" <%= perm.can_view ? 'checked' : '' %>>
               </td>
               <td class="text-center">
-                <input type="checkbox" class="form-check-input" name="perms[<%= g.id %>][can_assign]" value="1" <%= perm.can_assign ? 'checked' : '' %>>
+                <input type="checkbox" class="form-check-input" name="perms[g<%= g.id %>][can_assign]" value="1" <%= perm.can_assign ? 'checked' : '' %>>
               </td>
               <td class="text-center">
-                <input type="checkbox" class="form-check-input" name="perms[<%= g.id %>][can_rename]" value="1" <%= perm.can_rename ? 'checked' : '' %>>
+                <input type="checkbox" class="form-check-input" name="perms[g<%= g.id %>][can_rename]" value="1" <%= perm.can_rename ? 'checked' : '' %>>
               </td>
               <td class="text-center">
-                <input type="checkbox" class="form-check-input" name="perms[<%= g.id %>][can_makeover]" value="1" <%= perm.can_makeover ? 'checked' : '' %>>
+                <input type="checkbox" class="form-check-input" name="perms[g<%= g.id %>][can_makeover]" value="1" <%= perm.can_makeover ? 'checked' : '' %>>
               </td>
               <td class="text-center">
-                <input type="checkbox" class="form-check-input" name="perms[<%= g.id %>][can_tag]" value="1" <%= perm.can_tag ? 'checked' : '' %>>
+                <input type="checkbox" class="form-check-input" name="perms[g<%= g.id %>][can_tag]" value="1" <%= perm.can_tag ? 'checked' : '' %>>
               </td>
             </tr>
           <% }) %>

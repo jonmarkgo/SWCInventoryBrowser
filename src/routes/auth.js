@@ -8,6 +8,7 @@ import {
   initLeaderClient,
   createTempClient,
   storeLeaderUid,
+  detectFaction,
 } from '../swc-client.js';
 import { setFlash } from '../middleware/flash.js';
 
@@ -27,8 +28,8 @@ router.get('/login', (req, res) => {
   res.redirect(url);
 });
 
-// GET /auth/callback
-router.get('/callback', async (req, res) => {
+// OAuth callback handler (exported for dynamic mounting)
+export async function callbackHandler(req, res) {
   try {
     const { state } = req.query;
     if (state !== req.session.oauthState) {
@@ -70,7 +71,10 @@ router.get('/callback', async (req, res) => {
         req.session.userId = id;
       }
 
-      setFlash(req, 'success', `Welcome, ${swcName}! Leader access granted.`);
+      // Auto-detect primary faction
+      const faction = await detectFaction();
+      const factionMsg = faction ? ` Faction: ${faction.name}.` : ' Please set your faction UID in the dashboard.';
+      setFlash(req, 'success', `Welcome, ${swcName}! Leader access granted.${factionMsg}`);
       return res.redirect('/dashboard');
     } else {
       // Sub-user: just verify identity, no token stored
@@ -91,7 +95,9 @@ router.get('/callback', async (req, res) => {
     setFlash(req, 'danger', 'Authentication error. Please try again.');
     return res.redirect('/');
   }
-});
+}
+
+router.get('/callback', callbackHandler);
 
 // POST /auth/logout
 router.post('/logout', (req, res) => {

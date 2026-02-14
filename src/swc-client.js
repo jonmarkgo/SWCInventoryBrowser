@@ -19,17 +19,6 @@ const LEADER_SCOPES = [
   Scopes.FactionInventory.DROIDS.ALL,
   Scopes.FactionInventory.CREATURES.ALL,
   Scopes.FactionInventory.MATERIALS.ALL,
-  Scopes.PersonalInventory.OVERVIEW,
-  Scopes.PersonalInventory.SHIPS.ALL,
-  Scopes.PersonalInventory.VEHICLES.ALL,
-  Scopes.PersonalInventory.STATIONS.ALL,
-  Scopes.PersonalInventory.CITIES.ALL,
-  Scopes.PersonalInventory.FACILITIES.ALL,
-  Scopes.PersonalInventory.ITEMS.ALL,
-  Scopes.PersonalInventory.NPCS.ALL,
-  Scopes.PersonalInventory.DROIDS.ALL,
-  Scopes.PersonalInventory.CREATURES.ALL,
-  Scopes.PersonalInventory.MATERIALS.ALL,
   Scopes.Faction.READ,
   Scopes.Faction.MEMBERS,
 ];
@@ -40,13 +29,24 @@ const SUBUSER_SCOPES = [
   CharacterScopes.READ,
 ];
 
+// Resolve the OAuth redirect URI (explicit env var > auto-derived from BASE_URL)
+const resolvedRedirectUri = config.swc.redirectUri || `${config.baseUrl}/auth/callback`;
+
 function createBaseClient() {
   return new SWCombine({
     clientId: config.swc.clientId,
     clientSecret: config.swc.clientSecret,
-    redirectUri: `${config.baseUrl}/auth/callback`,
+    redirectUri: resolvedRedirectUri,
     accessType: 'offline',
   });
+}
+
+export function getRedirectPath() {
+  try {
+    return new URL(resolvedRedirectUri).pathname;
+  } catch {
+    return '/auth/callback';
+  }
 }
 
 export function getLeaderAuthUrl(state) {
@@ -92,6 +92,50 @@ export async function getLeaderUid() {
   const db = getDb();
   const row = await db('settings').where('key', 'leader_uid').first();
   return row?.value || null;
+}
+
+export async function storeFactionUid(uid) {
+  const db = getDb();
+  await db('settings')
+    .insert({ key: 'faction_uid', value: uid })
+    .onConflict('key')
+    .merge();
+}
+
+export async function getFactionUid() {
+  const db = getDb();
+  const row = await db('settings').where('key', 'faction_uid').first();
+  return row?.value || null;
+}
+
+export async function storeFactionName(name) {
+  const db = getDb();
+  await db('settings')
+    .insert({ key: 'faction_name', value: name })
+    .onConflict('key')
+    .merge();
+}
+
+export async function getFactionName() {
+  const db = getDb();
+  const row = await db('settings').where('key', 'faction_name').first();
+  return row?.value || null;
+}
+
+// Detect the leader's primary faction using the API
+export async function detectFaction() {
+  if (!leaderClient) return null;
+  try {
+    const faction = await leaderClient.faction.get();
+    if (faction?.uid) {
+      await storeFactionUid(faction.uid);
+      await storeFactionName(faction.name || 'Unknown Faction');
+      return faction;
+    }
+  } catch (err) {
+    console.error('Failed to detect faction:', err.message);
+  }
+  return null;
 }
 
 // Initialize/get the leader client with stored token

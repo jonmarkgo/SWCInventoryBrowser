@@ -34,7 +34,7 @@ export async function getAuditLog({ page = 1, limit = 50, userId, action, entity
     countQuery = countQuery.where('a.entity_type', entityType);
   }
 
-  const rows = await query.orderBy('a.created_at', 'desc').limit(limit).offset(offset);
+  const rows = await query.orderBy([{ column: 'a.created_at', order: 'desc' }, { column: 'a.id', order: 'desc' }]).limit(limit).offset(offset);
   const [{ total }] = await countQuery.count('* as total');
 
   return { rows, total, page, pages: Math.ceil(total / limit) };

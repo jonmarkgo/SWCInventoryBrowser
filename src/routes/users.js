@@ -50,7 +50,7 @@ router.post('/:id/permissions', requireLeader, async (req, res) => {
   const perms = req.body.perms || {};
 
   for (const group of groups) {
-    const groupPerms = perms[group.id];
+    const groupPerms = perms['g' + group.id];
     if (groupPerms && (groupPerms.can_view || groupPerms.can_assign || groupPerms.can_rename || groupPerms.can_makeover || groupPerms.can_tag)) {
       await setPermission(targetUser.id, group.id, {
         can_view: !!groupPerms.can_view,

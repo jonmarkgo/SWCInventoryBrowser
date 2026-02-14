@@ -19,6 +19,19 @@ export function getDb() {
   return knex;
 }
 
+// For testing: override the knex instance (e.g. with an in-memory DB)
+export function setDb(instance) {
+  knex = instance;
+}
+
+// For testing: close and clear the connection
+export async function closeDb() {
+  if (knex) {
+    await knex.destroy();
+    knex = null;
+  }
+}
+
 export async function initDatabase() {
   const db = getDb();
 
@@ -104,7 +117,7 @@ export async function initDatabase() {
       t.text('entity_image').defaultTo('');
       t.text('entity_data').defaultTo('{}');
       t.timestamp('cached_at').defaultTo(db.fn.now());
-      t.unique(['entity_type', 'entity_uid']);
+      t.index(['owner_uid', 'entity_type']);
     });
   }
 }
