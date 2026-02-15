@@ -53,7 +53,8 @@
     <div class="card bg-dark border-secondary mb-3">
       <div class="card-header">Tags (SWC API)</div>
       <div class="card-body">
-        <% const tags = entity.entity_data?.tags || []; %>
+        <% const rawTags = entity.entity_data?.tags;
+           const tags = Array.isArray(rawTags) ? rawTags : Array.isArray(rawTags?.tag) ? rawTags.tag : []; %>
         <div class="d-flex flex-wrap gap-2 mb-2" id="tag-list">
           <% tags.forEach(tag => { %>
             <span class="badge bg-info text-dark d-flex align-items-center gap-1">
@@ -73,6 +74,25 @@
       </div>
     </div>
 
+    <!-- Actions -->
+    <div class="card bg-dark border-secondary mb-3">
+      <div class="card-header">Actions</div>
+      <div class="card-body d-flex flex-wrap gap-2">
+        <button class="btn btn-sm btn-outline-warning action-btn" data-action="assign" data-bs-toggle="modal" data-bs-target="#leaderActionModal">
+          <i class="bi bi-arrow-right-circle"></i> Assign
+        </button>
+        <button class="btn btn-sm btn-outline-info action-btn" data-action="rename" data-bs-toggle="modal" data-bs-target="#leaderActionModal">
+          <i class="bi bi-pencil"></i> Rename
+        </button>
+        <button class="btn btn-sm btn-outline-success action-btn" data-action="makeover" data-bs-toggle="modal" data-bs-target="#leaderActionModal">
+          <i class="bi bi-brush"></i> Makeover
+        </button>
+        <button class="btn btn-sm btn-outline-light action-btn" data-action="tag" data-bs-toggle="modal" data-bs-target="#leaderActionModal">
+          <i class="bi bi-tag"></i> Tag
+        </button>
+      </div>
+    </div>
+
     <!-- Entity Data -->
     <div class="card bg-dark border-secondary">
       <div class="card-header">
@@ -85,6 +105,72 @@
           <pre class="text-muted small mb-0" style="max-height: 400px; overflow: auto;"><%= JSON.stringify(entity.entity_data, null, 2) %></pre>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Leader Action Modal -->
+<div class="modal fade" id="leaderActionModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content bg-dark border-secondary">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title" id="leaderActionTitle">Action</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="/inventory/<%= entityType %>/<%= entity.entity_uid %>/action">
+        <div class="modal-body">
+          <input type="hidden" name="action" id="leader-action-type">
+          <p>Entity: <strong><%= entity.entity_name || entity.entity_uid %></strong></p>
+
+          <div id="leader-assign-fields" style="display:none;">
+            <div class="mb-3">
+              <label class="form-label">New Owner UID</label>
+              <input type="text" class="form-control bg-dark text-light border-secondary"
+                     name="new_owner" placeholder="e.g., 1:12345 or 20:502">
+            </div>
+          </div>
+
+          <div id="leader-rename-fields" style="display:none;">
+            <div class="mb-3">
+              <label class="form-label">New Name</label>
+              <input type="text" class="form-control bg-dark text-light border-secondary"
+                     name="new_name" placeholder="Enter new name...">
+            </div>
+          </div>
+
+          <div id="leader-makeover-fields" style="display:none;">
+            <div class="mb-3">
+              <label class="form-label">New Name</label>
+              <input type="text" class="form-control bg-dark text-light border-secondary"
+                     name="makeover_name" placeholder="Enter new name...">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Info Text</label>
+              <textarea class="form-control bg-dark text-light border-secondary"
+                        name="makeover_info" rows="2" placeholder="Enter info text..."></textarea>
+            </div>
+          </div>
+
+          <div id="leader-tag-fields" style="display:none;">
+            <div class="mb-3">
+              <label class="form-label">Tag</label>
+              <input type="text" class="form-control bg-dark text-light border-secondary"
+                     name="tag_value" placeholder="Enter tag name...">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Operation</label>
+              <select name="tag_action" class="form-select bg-dark text-light border-secondary">
+                <option value="add">Add Tag</option>
+                <option value="remove">Remove Tag</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-secondary">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-info">Execute</button>
+        </div>
+      </form>
     </div>
   </div>
 </div>

@@ -34,29 +34,43 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Sub-user action modal - toggle field visibility based on action type
+  // Action modal - toggle field visibility based on action type
+  // Works for both sub-user modal (actionModal) and leader modal (leaderActionModal)
   document.querySelectorAll('.action-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       const action = btn.dataset.action;
-      document.getElementById('action-type').value = action;
-      document.getElementById('action-entity-type').value = btn.dataset.entityType;
-      document.getElementById('action-entity-uid').value = btn.dataset.entityUid;
-      document.getElementById('action-entity-label').textContent =
-        `${btn.dataset.entityName || btn.dataset.entityUid} (${btn.dataset.entityType})`;
-
       const titleMap = {
         assign: 'Assign Owner',
         rename: 'Rename',
         makeover: 'Makeover',
         tag: 'Manage Tag',
       };
-      document.getElementById('actionModalTitle').textContent = titleMap[action] || 'Action';
 
-      // Show/hide relevant fields
-      ['assign', 'rename', 'makeover', 'tag'].forEach((a) => {
-        const el = document.getElementById(`${a}-fields`);
-        if (el) el.style.display = a === action ? 'block' : 'none';
-      });
+      // Sub-user modal fields (if present)
+      const actionType = document.getElementById('action-type');
+      if (actionType) {
+        actionType.value = action;
+        document.getElementById('action-entity-type').value = btn.dataset.entityType;
+        document.getElementById('action-entity-uid').value = btn.dataset.entityUid;
+        document.getElementById('action-entity-label').textContent =
+          `${btn.dataset.entityName || btn.dataset.entityUid} (${btn.dataset.entityType})`;
+        document.getElementById('actionModalTitle').textContent = titleMap[action] || 'Action';
+        ['assign', 'rename', 'makeover', 'tag'].forEach((a) => {
+          const el = document.getElementById(`${a}-fields`);
+          if (el) el.style.display = a === action ? 'block' : 'none';
+        });
+      }
+
+      // Leader modal fields (if present)
+      const leaderActionType = document.getElementById('leader-action-type');
+      if (leaderActionType) {
+        leaderActionType.value = action;
+        document.getElementById('leaderActionTitle').textContent = titleMap[action] || 'Action';
+        ['assign', 'rename', 'makeover', 'tag'].forEach((a) => {
+          const el = document.getElementById(`leader-${a}-fields`);
+          if (el) el.style.display = a === action ? 'block' : 'none';
+        });
+      }
     });
   });
 

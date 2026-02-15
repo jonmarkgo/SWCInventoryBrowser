@@ -3,7 +3,8 @@ import { requireLeader } from '../middleware/auth.js';
 import { setFlash } from '../middleware/flash.js';
 import { getInventory, getEntity, refreshAll, ENTITY_TYPES } from '../services/inventory-service.js';
 import { getGroupsForItem, getAllGroups } from '../services/group-service.js';
-import { getFactionUid } from '../swc-client.js';
+import { getFactionUid, getLeaderClient } from '../swc-client.js';
+import { logAction } from '../services/audit-service.js';
 
 const router = Router();
 
@@ -72,6 +73,75 @@ router.get('/:type/:uid', requireLeader, async (req, res) => {
     itemGroups,
     groups,
   });
+});
+
+// POST /inventory/:type/:uid/action - leader inventory action
+router.post('/:type/:uid/action', requireLeader, async (req, res) => {
+  const { type: entityType, uid: entityUid } = req.params;
+  const { action } = req.body;
+  const client = getLeaderClient();
+
+  if (!client) {
+    setFlash(req, 'danger', 'Leader API connection unavailable.');
+    return res.redirect(`/inventory/${entityType}/${entityUid}`);
+  }
+
+  try {
+    switch (action) {
+      case 'assign': {
+        const { new_owner } = req.body;
+        if (!new_owner?.trim()) throw new Error('New owner UID is required');
+        await client.inventory.entities.updateProperty({
+          entityType, uid: entityUid, owner: new_owner.trim(),
+        });
+        await logAction(req.session.userId, 'assign', entityType, entityUid, `Assigned to ${new_owner.trim()}`);
+        setFlash(req, 'success', `Assigned to ${new_owner.trim()}.`);
+        break;
+      }
+      case 'rename': {
+        const { new_name } = req.body;
+        if (!new_name?.trim()) throw new Error('New name is required');
+        await client.inventory.entities.updateProperty({
+          entityType, uid: entityUid, name: new_name.trim(),
+        });
+        await logAction(req.session.userId, 'rename', entityType, entityUid, `Renamed to "${new_name.trim()}"`);
+        setFlash(req, 'success', `Renamed to "${new_name.trim()}".`);
+        break;
+      }
+      case 'makeover': {
+        const props = {};
+        if (req.body.makeover_name?.trim()) props.name = req.body.makeover_name.trim();
+        if (req.body.makeover_info?.trim()) props.info = req.body.makeover_info.trim();
+        if (Object.keys(props).length === 0) throw new Error('At least one field required for makeover');
+        await client.inventory.entities.updateProperty({
+          entityType, uid: entityUid, ...props,
+        });
+        await logAction(req.session.userId, 'makeover', entityType, entityUid, `Makeover: ${JSON.stringify(props)}`);
+        setFlash(req, 'success', 'Makeover applied.');
+        break;
+      }
+      case 'tag': {
+        const { tag_value, tag_action } = req.body;
+        if (!tag_value?.trim()) throw new Error('Tag value is required');
+        if (tag_action === 'remove') {
+          await client.inventory.entities.removeTag({ entityType, uid: entityUid, tag: tag_value.trim() });
+          await logAction(req.session.userId, 'remove_tag', entityType, entityUid, `Removed tag "${tag_value.trim()}"`);
+        } else {
+          await client.inventory.entities.addTag({ entityType, uid: entityUid, tag: tag_value.trim() });
+          await logAction(req.session.userId, 'add_tag', entityType, entityUid, `Added tag "${tag_value.trim()}"`);
+        }
+        setFlash(req, 'success', `Tag ${tag_action === 'remove' ? 'removed' : 'added'}.`);
+        break;
+      }
+      default:
+        throw new Error('Unknown action');
+    }
+  } catch (err) {
+    console.error('Leader action error:', err);
+    setFlash(req, 'danger', `Action failed: ${err.message}`);
+  }
+
+  res.redirect(`/inventory/${entityType}/${entityUid}`);
 });
 
 // POST /inventory/refresh - refresh cache
