@@ -132,4 +132,119 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
+
+  // --- Bulk Selection ---
+  const bulkCheckboxes = document.querySelectorAll('.bulk-select');
+  const bulkBar = document.getElementById('bulk-action-bar');
+  const bulkCountEl = document.getElementById('bulk-count');
+  const selectAllBrowse = document.getElementById('select-all-browse');
+  const selectAllGroup = document.getElementById('select-all-group');
+  const bulkDeselect = document.getElementById('bulk-deselect');
+
+  function getSelectedItems() {
+    const selected = [];
+    bulkCheckboxes.forEach((cb) => {
+      if (cb.checked) {
+        selected.push({
+          entity_type: cb.dataset.entityType,
+          entity_uid: cb.dataset.entityUid,
+          entity_name: cb.dataset.entityName || '',
+        });
+      }
+    });
+    return selected;
+  }
+
+  function updateBulkBar() {
+    const selected = getSelectedItems();
+    const count = selected.length;
+    if (bulkBar) {
+      bulkBar.style.display = count > 0 ? 'block' : 'none';
+    }
+    if (bulkCountEl) {
+      bulkCountEl.textContent = count;
+    }
+
+    // Update select-all checkbox state
+    const selectAll = selectAllBrowse || selectAllGroup;
+    if (selectAll && bulkCheckboxes.length > 0) {
+      selectAll.checked = count === bulkCheckboxes.length;
+      selectAll.indeterminate = count > 0 && count < bulkCheckboxes.length;
+    }
+  }
+
+  // Individual checkbox change
+  bulkCheckboxes.forEach((cb) => {
+    cb.addEventListener('change', updateBulkBar);
+  });
+
+  // Select-all checkbox
+  [selectAllBrowse, selectAllGroup].forEach((selectAll) => {
+    if (!selectAll) return;
+    selectAll.addEventListener('change', () => {
+      bulkCheckboxes.forEach((cb) => {
+        cb.checked = selectAll.checked;
+      });
+      updateBulkBar();
+    });
+  });
+
+  // Clear selection button
+  if (bulkDeselect) {
+    bulkDeselect.addEventListener('click', () => {
+      bulkCheckboxes.forEach((cb) => { cb.checked = false; });
+      updateBulkBar();
+    });
+  }
+
+  // Bulk action trigger buttons - populate modal with selected items
+  document.querySelectorAll('.bulk-action-trigger').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const action = btn.dataset.action;
+      const selected = getSelectedItems();
+      const itemsJson = JSON.stringify(selected);
+
+      const titleMap = {
+        assign: 'Bulk Assign',
+        rename: 'Bulk Rename',
+        makeover: 'Bulk Makeover',
+        tag: 'Bulk Tag',
+        'add-to-group': 'Bulk Add to Group',
+      };
+
+      // Bulk action modal
+      const bulkActionType = document.getElementById('bulk-action-type');
+      if (bulkActionType) {
+        bulkActionType.value = action;
+      }
+      const bulkActionItems = document.getElementById('bulk-action-items');
+      if (bulkActionItems) {
+        bulkActionItems.value = itemsJson;
+      }
+      const bulkModalCount = document.getElementById('bulk-modal-count');
+      if (bulkModalCount) {
+        bulkModalCount.textContent = selected.length;
+      }
+      const bulkActionTitle = document.getElementById('bulkActionTitle');
+      if (bulkActionTitle) {
+        bulkActionTitle.textContent = titleMap[action] || 'Bulk Action';
+      }
+
+      // Toggle field visibility for bulk action modal
+      ['assign', 'rename', 'makeover', 'tag'].forEach((a) => {
+        const el = document.getElementById(`bulk-${a}-fields`);
+        if (el) el.style.display = a === action ? 'block' : 'none';
+      });
+
+      // Bulk add-to-group modal
+      const bulkGroupItems = document.getElementById('bulk-group-items');
+      if (bulkGroupItems) {
+        bulkGroupItems.value = itemsJson;
+      }
+      const bulkGroupCount = document.getElementById('bulk-group-count');
+      if (bulkGroupCount) {
+        bulkGroupCount.textContent = selected.length;
+      }
+    });
+  });
 });

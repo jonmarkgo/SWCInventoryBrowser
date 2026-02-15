@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { requireLeader } from '../middleware/auth.js';
 import { setFlash } from '../middleware/flash.js';
 import { getInventory, getEntity, refreshAll, ENTITY_TYPES } from '../services/inventory-service.js';
-import { getGroupsForItem, getAllGroups } from '../services/group-service.js';
+import { getGroupsForItem, getAllGroups, addItemToGroup } from '../services/group-service.js';
 import { getFactionUid, getLeaderClient } from '../swc-client.js';
 import { logAction } from '../services/audit-service.js';
 
@@ -142,6 +142,126 @@ router.post('/:type/:uid/action', requireLeader, async (req, res) => {
   }
 
   res.redirect(`/inventory/${entityType}/${entityUid}`);
+});
+
+// POST /inventory/bulk-action - leader bulk action on multiple items
+router.post('/bulk-action', requireLeader, async (req, res) => {
+  const { action, items: itemsJson } = req.body;
+  const client = getLeaderClient();
+
+  if (!client) {
+    setFlash(req, 'danger', 'Leader API connection unavailable.');
+    return res.redirect('/inventory');
+  }
+
+  let items;
+  try {
+    items = JSON.parse(itemsJson);
+  } catch {
+    setFlash(req, 'danger', 'Invalid item selection.');
+    return res.redirect('/inventory');
+  }
+
+  if (!Array.isArray(items) || items.length === 0) {
+    setFlash(req, 'warning', 'No items selected.');
+    return res.redirect('/inventory');
+  }
+
+  let successCount = 0;
+  let errorCount = 0;
+  const redirectType = items[0]?.entity_type || 'ships';
+
+  for (const item of items) {
+    const { entity_type, entity_uid } = item;
+    if (!entity_type || !entity_uid) { errorCount++; continue; }
+
+    try {
+      switch (action) {
+        case 'assign': {
+          const { assign_to, assign_type } = req.body;
+          if (!assign_to?.trim()) throw new Error('Target is required');
+          const validTypes = ['commander', 'pilot', 'operator'];
+          if (!validTypes.includes(assign_type)) throw new Error('Invalid assignment type');
+          await client.inventory.entities.updateProperty({
+            entityType: entity_type, uid: entity_uid, [assign_type]: assign_to.trim(),
+          });
+          await logAction(req.session.userId, 'assign', entity_type, entity_uid, `Bulk: assigned ${assign_type} to ${assign_to.trim()}`);
+          break;
+        }
+        case 'rename': {
+          const { new_name } = req.body;
+          if (!new_name?.trim()) throw new Error('New name is required');
+          await client.inventory.entities.updateProperty({
+            entityType: entity_type, uid: entity_uid, name: new_name.trim(),
+          });
+          await logAction(req.session.userId, 'rename', entity_type, entity_uid, `Bulk: renamed to "${new_name.trim()}"`);
+          break;
+        }
+        case 'makeover': {
+          const { new_owner } = req.body;
+          if (!new_owner?.trim()) throw new Error('New owner is required');
+          await client.inventory.entities.updateProperty({
+            entityType: entity_type, uid: entity_uid, owner: new_owner.trim(),
+          });
+          await logAction(req.session.userId, 'makeover', entity_type, entity_uid, `Bulk: ownership transferred to ${new_owner.trim()}`);
+          break;
+        }
+        case 'tag': {
+          const { tag_value, tag_action } = req.body;
+          if (!tag_value?.trim()) throw new Error('Tag value is required');
+          if (tag_action === 'remove') {
+            await client.inventory.entities.removeTag({ entityType: entity_type, uid: entity_uid, tag: tag_value.trim() });
+            await logAction(req.session.userId, 'remove_tag', entity_type, entity_uid, `Bulk: removed tag "${tag_value.trim()}"`);
+          } else {
+            await client.inventory.entities.addTag({ entityType: entity_type, uid: entity_uid, tag: tag_value.trim() });
+            await logAction(req.session.userId, 'add_tag', entity_type, entity_uid, `Bulk: added tag "${tag_value.trim()}"`);
+          }
+          break;
+        }
+        default:
+          throw new Error('Unknown action');
+      }
+      successCount++;
+    } catch (err) {
+      console.error(`Bulk action error on ${entity_type} ${entity_uid}:`, err.message);
+      errorCount++;
+    }
+  }
+
+  if (successCount > 0) setFlash(req, 'success', `${action} completed on ${successCount} item(s).`);
+  if (errorCount > 0) setFlash(req, 'warning', `${errorCount} item(s) failed.`);
+  res.redirect(`/inventory/${redirectType}`);
+});
+
+// POST /inventory/bulk-add-to-group - add multiple items to a group
+router.post('/bulk-add-to-group', requireLeader, async (req, res) => {
+  const { group_id, items: itemsJson } = req.body;
+
+  let items;
+  try {
+    items = JSON.parse(itemsJson);
+  } catch {
+    setFlash(req, 'danger', 'Invalid item selection.');
+    return res.redirect('/inventory');
+  }
+
+  if (!group_id || !Array.isArray(items) || items.length === 0) {
+    setFlash(req, 'warning', 'No items selected or no group chosen.');
+    return res.redirect('/inventory');
+  }
+
+  let addedCount = 0;
+  for (const item of items) {
+    const added = await addItemToGroup(parseInt(group_id), item.entity_type, item.entity_uid, item.entity_name || '', item.entity_image || '');
+    if (added) {
+      await logAction(req.session.userId, 'add_to_group', item.entity_type, item.entity_uid, `Bulk: added to group ${group_id}`);
+      addedCount++;
+    }
+  }
+
+  setFlash(req, 'success', `${addedCount} item(s) added to group.`);
+  const redirectType = items[0]?.entity_type || 'ships';
+  res.redirect(`/inventory/${redirectType}`);
 });
 
 // POST /inventory/refresh - refresh cache

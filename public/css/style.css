@@ -194,3 +194,27 @@ main {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--swc-text-muted);
 }
+
+/* Bulk Action Bar */
+.bulk-action-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: var(--swc-surface);
+  border-top: 2px solid var(--swc-accent);
+  padding: 0.75rem 1rem;
+  z-index: 1050;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* Add bottom padding to body when bar is visible so content isn't hidden */
+body:has(.bulk-action-bar[style*="display: block"]),
+body:has(.bulk-action-bar[style*="display:block"]) {
+  padding-bottom: 70px;
+}
+
+/* Selected row highlight */
+.table tr:has(.bulk-select:checked) {
+  background-color: rgba(13, 202, 240, 0.08) !important;
+}

@@ -131,4 +131,108 @@ router.post('/groups/:id/actions', requireAuth, async (req, res) => {
   res.redirect(`/my/groups/${group.id}`);
 });
 
+// POST /my/groups/:id/bulk-actions - sub-user bulk action via leader's token
+router.post('/groups/:id/bulk-actions', requireAuth, async (req, res) => {
+  const group = await getGroup(req.params.id);
+  if (!group) return res.status(404).render('error', { title: 'Not Found', message: 'Group not found.' });
+
+  const perms = await getPermission(req.session.userId, group.id);
+  const effectivePerms = req.appUser?.is_leader
+    ? { can_view: 1, can_assign: 1, can_rename: 1, can_makeover: 1, can_tag: 1 }
+    : perms;
+
+  if (!effectivePerms?.can_view) {
+    setFlash(req, 'danger', 'Access denied.');
+    return res.redirect('/my/dashboard');
+  }
+
+  const { action, items: itemsJson } = req.body;
+  const client = getLeaderClient();
+  if (!client) {
+    setFlash(req, 'danger', 'Leader API connection unavailable.');
+    return res.redirect(`/my/groups/${group.id}`);
+  }
+
+  let items;
+  try {
+    items = JSON.parse(itemsJson);
+  } catch {
+    setFlash(req, 'danger', 'Invalid item selection.');
+    return res.redirect(`/my/groups/${group.id}`);
+  }
+
+  if (!Array.isArray(items) || items.length === 0) {
+    setFlash(req, 'warning', 'No items selected.');
+    return res.redirect(`/my/groups/${group.id}`);
+  }
+
+  let successCount = 0;
+  let errorCount = 0;
+
+  for (const item of items) {
+    const { entity_type, entity_uid } = item;
+    if (!entity_type || !entity_uid) { errorCount++; continue; }
+
+    try {
+      switch (action) {
+        case 'assign': {
+          if (!effectivePerms.can_assign) throw new Error('Permission denied: assign');
+          const { assign_to, assign_type } = req.body;
+          if (!assign_to?.trim()) throw new Error('Target is required');
+          const validTypes = ['commander', 'pilot', 'operator'];
+          if (!validTypes.includes(assign_type)) throw new Error('Invalid assignment type');
+          await client.inventory.entities.updateProperty({
+            entityType: entity_type, uid: entity_uid, [assign_type]: assign_to.trim(),
+          });
+          await logAction(req.session.userId, 'assign', entity_type, entity_uid, `Bulk: assigned ${assign_type} to ${assign_to.trim()}`);
+          break;
+        }
+        case 'rename': {
+          if (!effectivePerms.can_rename) throw new Error('Permission denied: rename');
+          const { new_name } = req.body;
+          if (!new_name?.trim()) throw new Error('New name is required');
+          await client.inventory.entities.updateProperty({
+            entityType: entity_type, uid: entity_uid, name: new_name.trim(),
+          });
+          await logAction(req.session.userId, 'rename', entity_type, entity_uid, `Bulk: renamed to "${new_name.trim()}"`);
+          break;
+        }
+        case 'makeover': {
+          if (!effectivePerms.can_makeover) throw new Error('Permission denied: makeover');
+          const { new_owner } = req.body;
+          if (!new_owner?.trim()) throw new Error('New owner is required');
+          await client.inventory.entities.updateProperty({
+            entityType: entity_type, uid: entity_uid, owner: new_owner.trim(),
+          });
+          await logAction(req.session.userId, 'makeover', entity_type, entity_uid, `Bulk: ownership transferred to ${new_owner.trim()}`);
+          break;
+        }
+        case 'tag': {
+          if (!effectivePerms.can_tag) throw new Error('Permission denied: tag');
+          const { tag_value, tag_action } = req.body;
+          if (!tag_value?.trim()) throw new Error('Tag value is required');
+          if (tag_action === 'remove') {
+            await client.inventory.entities.removeTag({ entityType: entity_type, uid: entity_uid, tag: tag_value.trim() });
+            await logAction(req.session.userId, 'remove_tag', entity_type, entity_uid, `Bulk: removed tag "${tag_value.trim()}"`);
+          } else {
+            await client.inventory.entities.addTag({ entityType: entity_type, uid: entity_uid, tag: tag_value.trim() });
+            await logAction(req.session.userId, 'add_tag', entity_type, entity_uid, `Bulk: added tag "${tag_value.trim()}"`);
+          }
+          break;
+        }
+        default:
+          throw new Error('Unknown action');
+      }
+      successCount++;
+    } catch (err) {
+      console.error(`Bulk action error on ${entity_type} ${entity_uid}:`, err.message);
+      errorCount++;
+    }
+  }
+
+  if (successCount > 0) setFlash(req, 'success', `${action} completed on ${successCount} item(s).`);
+  if (errorCount > 0) setFlash(req, 'warning', `${errorCount} item(s) failed.`);
+  res.redirect(`/my/groups/${group.id}`);
+});
+
 export default router;
