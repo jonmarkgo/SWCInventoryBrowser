@@ -63,15 +63,17 @@ router.post('/groups/:id/actions', requireAuth, async (req, res) => {
     switch (action) {
       case 'assign': {
         if (!effectivePerms.can_assign) throw new Error('Permission denied: assign');
-        const { new_owner } = req.body;
-        if (!new_owner?.trim()) throw new Error('New owner UID is required');
+        const { assign_to, assign_type } = req.body;
+        if (!assign_to?.trim()) throw new Error('Character/faction name or UID is required');
+        const validTypes = ['commander', 'pilot', 'operator'];
+        if (!validTypes.includes(assign_type)) throw new Error('Invalid assignment type');
         await client.inventory.entities.updateProperty({
           entityType: entity_type,
           uid: entity_uid,
-          owner: new_owner.trim(),
+          [assign_type]: assign_to.trim(),
         });
-        await logAction(req.session.userId, 'assign', entity_type, entity_uid, `Assigned to ${new_owner.trim()}`);
-        setFlash(req, 'success', `${entity_type} ${entity_uid} assigned to ${new_owner.trim()}.`);
+        await logAction(req.session.userId, 'assign', entity_type, entity_uid, `Assigned ${assign_type} to ${assign_to.trim()}`);
+        setFlash(req, 'success', `${assign_type} set to ${assign_to.trim()}.`);
         break;
       }
 
@@ -91,17 +93,15 @@ router.post('/groups/:id/actions', requireAuth, async (req, res) => {
 
       case 'makeover': {
         if (!effectivePerms.can_makeover) throw new Error('Permission denied: makeover');
-        const props = {};
-        if (req.body.makeover_name?.trim()) props.name = req.body.makeover_name.trim();
-        if (req.body.makeover_info?.trim()) props.info = req.body.makeover_info.trim();
-        if (Object.keys(props).length === 0) throw new Error('At least one field required for makeover');
+        const { new_owner } = req.body;
+        if (!new_owner?.trim()) throw new Error('New owner name or UID is required');
         await client.inventory.entities.updateProperty({
           entityType: entity_type,
           uid: entity_uid,
-          ...props,
+          owner: new_owner.trim(),
         });
-        await logAction(req.session.userId, 'makeover', entity_type, entity_uid, `Makeover: ${JSON.stringify(props)}`);
-        setFlash(req, 'success', `${entity_type} ${entity_uid} updated.`);
+        await logAction(req.session.userId, 'makeover', entity_type, entity_uid, `Ownership transferred to ${new_owner.trim()}`);
+        setFlash(req, 'success', `Ownership of ${entity_type} ${entity_uid} transferred to ${new_owner.trim()}.`);
         break;
       }
 

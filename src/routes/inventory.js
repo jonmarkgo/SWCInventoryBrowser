@@ -89,13 +89,15 @@ router.post('/:type/:uid/action', requireLeader, async (req, res) => {
   try {
     switch (action) {
       case 'assign': {
-        const { new_owner } = req.body;
-        if (!new_owner?.trim()) throw new Error('New owner UID is required');
+        const { assign_to, assign_type } = req.body;
+        if (!assign_to?.trim()) throw new Error('Character/faction name or UID is required');
+        const validTypes = ['commander', 'pilot', 'operator'];
+        if (!validTypes.includes(assign_type)) throw new Error('Invalid assignment type');
         await client.inventory.entities.updateProperty({
-          entityType, uid: entityUid, owner: new_owner.trim(),
+          entityType, uid: entityUid, [assign_type]: assign_to.trim(),
         });
-        await logAction(req.session.userId, 'assign', entityType, entityUid, `Assigned to ${new_owner.trim()}`);
-        setFlash(req, 'success', `Assigned to ${new_owner.trim()}.`);
+        await logAction(req.session.userId, 'assign', entityType, entityUid, `Assigned ${assign_type} to ${assign_to.trim()}`);
+        setFlash(req, 'success', `${assign_type} set to ${assign_to.trim()}.`);
         break;
       }
       case 'rename': {
@@ -109,15 +111,13 @@ router.post('/:type/:uid/action', requireLeader, async (req, res) => {
         break;
       }
       case 'makeover': {
-        const props = {};
-        if (req.body.makeover_name?.trim()) props.name = req.body.makeover_name.trim();
-        if (req.body.makeover_info?.trim()) props.info = req.body.makeover_info.trim();
-        if (Object.keys(props).length === 0) throw new Error('At least one field required for makeover');
+        const { new_owner } = req.body;
+        if (!new_owner?.trim()) throw new Error('New owner name or UID is required');
         await client.inventory.entities.updateProperty({
-          entityType, uid: entityUid, ...props,
+          entityType, uid: entityUid, owner: new_owner.trim(),
         });
-        await logAction(req.session.userId, 'makeover', entityType, entityUid, `Makeover: ${JSON.stringify(props)}`);
-        setFlash(req, 'success', 'Makeover applied.');
+        await logAction(req.session.userId, 'makeover', entityType, entityUid, `Ownership transferred to ${new_owner.trim()}`);
+        setFlash(req, 'success', `Ownership transferred to ${new_owner.trim()}.`);
         break;
       }
       case 'tag': {

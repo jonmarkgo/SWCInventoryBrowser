@@ -117,9 +117,17 @@
           <!-- Assign fields -->
           <div id="assign-fields" style="display:none;">
             <div class="mb-3">
-              <label class="form-label">New Owner UID</label>
+              <label class="form-label">Assignment Type</label>
+              <select name="assign_type" class="form-select bg-dark text-light border-secondary">
+                <option value="commander">Commander</option>
+                <option value="pilot">Pilot</option>
+                <option value="operator">Operator</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Character or Faction Name / UID</label>
               <input type="text" class="form-control bg-dark text-light border-secondary"
-                     name="new_owner" placeholder="e.g., 1:12345">
+                     name="assign_to" placeholder="e.g., Roger Harp or 1:12345">
             </div>
           </div>
 
@@ -135,14 +143,9 @@
           <!-- Makeover fields -->
           <div id="makeover-fields" style="display:none;">
             <div class="mb-3">
-              <label class="form-label">New Name</label>
+              <label class="form-label">New Owner (Character or Faction Name / UID)</label>
               <input type="text" class="form-control bg-dark text-light border-secondary"
-                     name="makeover_name" placeholder="Enter new name...">
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Info Text</label>
-              <textarea class="form-control bg-dark text-light border-secondary"
-                        name="makeover_info" rows="2" placeholder="Enter info text..."></textarea>
+                     name="new_owner" placeholder="e.g., Rendili StarDrive or 20:502">
             </div>
           </div>
 
