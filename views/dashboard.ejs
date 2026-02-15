@@ -2,36 +2,41 @@
 
 <div class="card bg-dark border-secondary mb-4">
   <div class="card-header d-flex justify-content-between align-items-center">
-    <span><i class="bi bi-building text-info"></i> Active Faction</span>
-    <button class="btn btn-sm btn-outline-info" type="button" data-bs-toggle="collapse" data-bs-target="#factionForm">
-      <i class="bi bi-gear"></i> Change
+    <span><i class="bi bi-building text-info"></i> Inventory Owners</span>
+    <button class="btn btn-sm btn-outline-info" type="button" data-bs-toggle="collapse" data-bs-target="#ownerForm">
+      <i class="bi bi-gear"></i> Configure
     </button>
   </div>
   <div class="card-body">
-    <% if (factionUid) { %>
-      <p class="mb-0"><strong class="text-info"><%= factionName || 'Unknown' %></strong> <span class="text-muted small">(<%= factionUid %>)</span></p>
+    <% if (owners.length > 0) { %>
+      <div class="d-flex flex-wrap gap-2">
+        <% owners.forEach(o => { %>
+          <span class="badge bg-info text-dark">
+            <%= o.name %>
+            <span class="badge bg-dark text-muted ms-1"><%= o.owner_type %></span>
+          </span>
+        <% }) %>
+      </div>
     <% } else { %>
-      <p class="mb-0 text-warning">No faction configured. Set your faction UID below to browse inventory.</p>
+      <p class="mb-0 text-warning">No owners configured. Click Configure to enable factions.</p>
     <% } %>
   </div>
-  <div class="collapse" id="factionForm">
+  <div class="collapse" id="ownerForm">
     <div class="card-body border-top border-secondary">
       <% if (factions.length > 0) { %>
-        <form method="POST" action="/dashboard/faction" class="row g-2 align-items-end">
-          <div class="col-md-9">
-            <label for="faction_selection" class="form-label small text-muted">Select Faction</label>
-            <select class="form-select form-select-sm bg-dark text-light border-secondary" id="faction_selection" name="faction_selection" required>
-              <option value="">Choose a faction...</option>
-              <% factions.forEach(f => { %>
-                <option value="<%= f.uid %>|<%= f.name %>" <%= f.uid === factionUid ? 'selected' : '' %>>
-                  <%= f.name %> (<%= f.uid %>)<%= f.primary ? ' - Primary' : '' %>
-                </option>
-              <% }) %>
-            </select>
-          </div>
-          <div class="col-md-3">
-            <button type="submit" class="btn btn-sm btn-info w-100">Set Active</button>
-          </div>
+        <form method="POST" action="/dashboard/owners">
+          <p class="text-muted small mb-2">Select which factions to include in inventory management:</p>
+          <% factions.forEach(f => { %>
+            <div class="form-check mb-1">
+              <input class="form-check-input" type="checkbox" name="owner_uids" value="<%= f.uid %>"
+                     id="owner-<%= f.uid %>" <%= enabledSet.has(f.uid) ? 'checked' : '' %>>
+              <label class="form-check-label" for="owner-<%= f.uid %>">
+                <%= f.name %> <span class="text-muted small">(<%= f.uid %>)</span>
+                <% if (f.primary) { %><span class="badge bg-info text-dark ms-1">Primary</span><% } %>
+              </label>
+            </div>
+          <% }) %>
+          <button type="submit" class="btn btn-sm btn-info mt-2">Save Owners</button>
         </form>
       <% } else { %>
         <p class="text-muted small mb-0">Could not load faction list. Ensure the leader is authenticated.</p>
@@ -79,30 +84,28 @@
         </form>
       </div>
       <div class="card-body p-0">
-        <table class="table table-dark table-hover mb-0">
-          <thead>
-            <tr><th>Type</th><th class="text-end">Count</th><th class="text-end">Last Updated</th></tr>
-          </thead>
-          <tbody>
-            <% if (inventorySummary.length === 0) { %>
-              <tr><td colspan="3" class="text-center text-muted py-3">No inventory cached yet. Click Refresh All to load.</td></tr>
-            <% } else { %>
-              <% inventorySummary.forEach(row => { %>
+        <% if (owners.length === 0) { %>
+          <div class="text-center text-muted py-3">No owners configured yet. Click Configure above to enable factions.</div>
+        <% } else { %>
+          <table class="table table-dark table-hover mb-0">
+            <thead>
+              <tr><th>Owner</th><th>Type</th><th class="text-end">Items</th><th class="text-end">Last Updated</th></tr>
+            </thead>
+            <tbody>
+              <% owners.forEach(o => { %>
+                <% const info = ownerMap[o.uid] || { items: 0, lastCached: null }; %>
                 <tr>
-                  <td>
-                    <a href="/inventory/<%= row.entity_type %>" class="text-info text-decoration-none text-capitalize">
-                      <%= row.entity_type %>
-                    </a>
-                  </td>
-                  <td class="text-end"><%= row.count %></td>
+                  <td class="text-info"><%= o.name %></td>
+                  <td><span class="badge bg-secondary text-capitalize"><%= o.owner_type %></span></td>
+                  <td class="text-end"><%= info.items %></td>
                   <td class="text-end text-muted small">
-                    <%= row.last_cached ? new Date(row.last_cached).toLocaleString() : 'Never' %>
+                    <%= info.lastCached ? info.lastCached.toLocaleString() : 'Never' %>
                   </td>
                 </tr>
               <% }) %>
-            <% } %>
-          </tbody>
-        </table>
+            </tbody>
+          </table>
+        <% } %>
       </div>
     </div>
   </div>

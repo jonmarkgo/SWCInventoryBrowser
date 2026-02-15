@@ -106,6 +106,18 @@ export async function initDatabase() {
     });
   }
 
+  // Inventory owners table
+  if (!(await db.schema.hasTable('inventory_owners'))) {
+    await db.schema.createTable('inventory_owners', (t) => {
+      t.text('uid').primary();
+      t.text('owner_type').notNullable();
+      t.text('name').notNullable();
+      t.integer('enabled').defaultTo(1);
+      t.integer('is_primary').defaultTo(0);
+      t.timestamp('created_at').defaultTo(db.fn.now());
+    });
+  }
+
   // Inventory cache table
   if (!(await db.schema.hasTable('inventory_cache'))) {
     await db.schema.createTable('inventory_cache', (t) => {

@@ -20,14 +20,24 @@
   <% }) %>
 </ul>
 
-<!-- Search -->
+<!-- Search + Owner Filter -->
 <form method="GET" action="/inventory/<%= currentType %>" class="mb-3">
-  <div class="input-group input-group-sm" style="max-width: 400px;">
-    <input type="text" name="search" class="form-control bg-dark text-light border-secondary"
-           placeholder="Search by name..." value="<%= search %>">
-    <button class="btn btn-outline-info" type="submit"><i class="bi bi-search"></i></button>
-    <% if (search) { %>
-      <a href="/inventory/<%= currentType %>" class="btn btn-outline-secondary">Clear</a>
+  <div class="d-flex gap-2 flex-wrap align-items-end">
+    <div class="input-group input-group-sm" style="max-width: 400px;">
+      <input type="text" name="search" class="form-control bg-dark text-light border-secondary"
+             placeholder="Search by name..." value="<%= search %>">
+      <button class="btn btn-outline-info" type="submit"><i class="bi bi-search"></i></button>
+      <% if (search || ownerFilter) { %>
+        <a href="/inventory/<%= currentType %>" class="btn btn-outline-secondary">Clear</a>
+      <% } %>
+    </div>
+    <% if (owners.length > 1) { %>
+      <select name="owner" class="form-select form-select-sm bg-dark text-light border-secondary" style="max-width: 250px;" onchange="this.form.submit()">
+        <option value="">All Owners</option>
+        <% owners.forEach(o => { %>
+          <option value="<%= o.uid %>" <%= ownerFilter === o.uid ? 'selected' : '' %>><%= o.name %></option>
+        <% }) %>
+      </select>
     <% } %>
   </div>
 </form>
@@ -55,6 +65,7 @@
           <th style="width: 50px;"></th>
           <th>Name</th>
           <th>UID</th>
+          <% if (owners.length > 1) { %><th>Owner</th><% } %>
           <th>Groups</th>
           <th class="text-end">Actions</th>
         </tr>
@@ -83,6 +94,9 @@
               </a>
             </td>
             <td class="text-muted small"><%= item.entity_uid %></td>
+            <% if (owners.length > 1) { %>
+              <td class="small"><%= ownerMap[item.owner_uid] || item.owner_uid %></td>
+            <% } %>
             <td>
               <% const itemGroups = groupMap[item.entity_type + ':' + item.entity_uid] || []; %>
               <% itemGroups.forEach(g => { %>
@@ -105,7 +119,7 @@
     </table>
   </div>
 
-  <%- include('../partials/pagination', { page, pages, query: { search, type: currentType } }) %>
+  <%- include('../partials/pagination', { page, pages, query: { search, type: currentType, owner: ownerFilter } }) %>
 <% } %>
 
 <!-- Bulk Action Bar -->

@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { requireLeader } from '../middleware/auth.js';
 import { setFlash } from '../middleware/flash.js';
-import { getInventory, getEntity, refreshAll, ENTITY_TYPES } from '../services/inventory-service.js';
+import { getInventory, getEntity, refreshAll, getMultiOwnerInventory, refreshAllOwners, ENTITY_TYPES } from '../services/inventory-service.js';
 import { getGroupsForItem, getAllGroups, addItemToGroup } from '../services/group-service.js';
-import { getFactionUid, getLeaderClient } from '../swc-client.js';
+import { getEnabledOwners } from '../services/owner-service.js';
+import { getLeaderClient } from '../swc-client.js';
 import { logAction } from '../services/audit-service.js';
 
 const router = Router();
@@ -20,21 +21,29 @@ router.get('/:type', requireLeader, async (req, res) => {
     return res.status(404).render('error', { title: 'Not Found', message: 'Invalid entity type.' });
   }
 
-  const factionUid = await getFactionUid();
-  if (!factionUid) {
-    setFlash(req, 'warning', 'No faction configured. Please set your faction in the dashboard.');
+  const owners = await getEnabledOwners();
+  if (owners.length === 0) {
+    setFlash(req, 'warning', 'No owners configured. Please configure owners in the dashboard.');
     return res.redirect('/dashboard');
   }
 
+  const ownerUids = owners.map(o => o.uid);
   const page = parseInt(req.query.page) || 1;
   const search = req.query.search || '';
-  const result = await getInventory(factionUid, currentType, { page, search });
+  const ownerFilter = req.query.owner || '';
+  const result = await getMultiOwnerInventory(ownerUids, currentType, { page, search, ownerFilter });
 
   // Build a map of groups for displayed items
   const groupMap = {};
   for (const item of result.items) {
     const key = item.entity_type + ':' + item.entity_uid;
     groupMap[key] = await getGroupsForItem(item.entity_type, item.entity_uid);
+  }
+
+  // Build owner name map for the owner column
+  const ownerMap = {};
+  for (const o of owners) {
+    ownerMap[o.uid] = o.name;
   }
 
   const groups = await getAllGroups();
@@ -51,6 +60,9 @@ router.get('/:type', requireLeader, async (req, res) => {
     search,
     groupMap,
     groups,
+    owners,
+    ownerMap,
+    ownerFilter,
   });
 });
 
@@ -264,24 +276,28 @@ router.post('/bulk-add-to-group', requireLeader, async (req, res) => {
   res.redirect(`/inventory/${redirectType}`);
 });
 
-// POST /inventory/refresh - refresh cache
+// POST /inventory/refresh - refresh cache for all enabled owners
 router.post('/refresh', requireLeader, async (req, res) => {
-  const factionUid = await getFactionUid();
-  if (!factionUid) {
-    setFlash(req, 'warning', 'No faction configured. Please set your faction in the dashboard.');
+  const owners = await getEnabledOwners();
+  if (owners.length === 0) {
+    setFlash(req, 'warning', 'No owners configured. Please configure owners in the dashboard.');
     return res.redirect('/dashboard');
   }
 
+  const ownerUids = owners.map(o => o.uid);
   const specificType = req.body.type;
 
   try {
     if (specificType && ENTITY_TYPES.includes(specificType)) {
-      await getInventory(factionUid, specificType, { forceRefresh: true });
-      setFlash(req, 'success', `${specificType} cache refreshed.`);
+      // Refresh specific type for all owners
+      for (const uid of ownerUids) {
+        await getInventory(uid, specificType, { forceRefresh: true });
+      }
+      setFlash(req, 'success', `${specificType} cache refreshed for ${ownerUids.length} owner(s).`);
       return res.redirect(`/inventory/${specificType}`);
     } else {
-      await refreshAll(factionUid);
-      setFlash(req, 'success', 'All inventory caches refreshed.');
+      await refreshAllOwners(ownerUids);
+      setFlash(req, 'success', `All inventory caches refreshed for ${ownerUids.length} owner(s).`);
       return res.redirect('/dashboard');
     }
   } catch (err) {

@@ -36,6 +36,7 @@ export async function cleanTables() {
   await db('user_permissions').del();
   await db('group_items').del();
   await db('inventory_cache').del();
+  await db('inventory_owners').del();
   await db('users').del();
   await db('groups').del();
   await db('settings').del();
@@ -53,6 +54,23 @@ export async function createTestUser(overrides = {}) {
   };
   const [id] = await db('users').insert(data);
   return { id, ...data };
+}
+
+/**
+ * Insert a test owner and return it.
+ */
+export async function createTestOwner(overrides = {}) {
+  const data = {
+    uid: overrides.uid || `20:${Math.floor(Math.random() * 99999)}`,
+    name: overrides.name || 'Test Faction',
+    owner_type: overrides.owner_type || 'faction',
+    enabled: overrides.enabled ?? 1,
+    is_primary: overrides.is_primary ?? 0,
+    created_at: new Date().toISOString(),
+    ...overrides,
+  };
+  await db('inventory_owners').insert(data);
+  return data;
 }
 
 /**

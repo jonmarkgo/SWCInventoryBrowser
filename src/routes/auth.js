@@ -8,8 +8,8 @@ import {
   initLeaderClient,
   createTempClient,
   storeLeaderUid,
-  detectFaction,
 } from '../swc-client.js';
+import { syncOwners } from '../services/owner-service.js';
 import { setFlash } from '../middleware/flash.js';
 
 const router = Router();
@@ -71,9 +71,31 @@ export async function callbackHandler(req, res) {
         req.session.userId = id;
       }
 
-      // Auto-detect primary faction
-      const faction = await detectFaction();
-      const factionMsg = faction ? ` Faction: ${faction.name}.` : ' Please set your faction UID in the dashboard.';
+      // Sync all factions into inventory_owners (primary auto-enabled)
+      let factionMsg = '';
+      try {
+        const me = await tempClient.character.me();
+        if (Array.isArray(me?.factions)) {
+          const apiFactions = me.factions
+            .map(f => ({
+              uid: f.attributes?.uid || f.uid || '',
+              name: f.value || f.name || 'Unknown',
+              type: 'faction',
+              primary: !!f.primary,
+            }))
+            .filter(f => f.uid);
+
+          if (apiFactions.length > 0) {
+            // Enable primary faction by default, keep others as-is
+            const primaryUids = apiFactions.filter(f => f.primary).map(f => f.uid);
+            await syncOwners(apiFactions, primaryUids);
+            const primaryName = apiFactions.find(f => f.primary)?.name;
+            factionMsg = primaryName ? ` Faction: ${primaryName}.` : '';
+          }
+        }
+      } catch (err) {
+        console.error('Failed to sync factions on login:', err.message);
+      }
       setFlash(req, 'success', `Welcome, ${swcName}! Leader access granted.${factionMsg}`);
       return res.redirect('/dashboard');
     } else {

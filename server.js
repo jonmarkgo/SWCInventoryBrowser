@@ -1,10 +1,12 @@
 import { config } from './src/config.js';
 import { initDatabase } from './src/database.js';
 import { restoreLeaderClient } from './src/swc-client.js';
+import { seedFromLegacySettings } from './src/services/owner-service.js';
 import { createApp } from './src/app.js';
 
 // Initialize database and restore leader token
 await initDatabase();
+await seedFromLegacySettings();
 await restoreLeaderClient();
 
 const app = createApp();

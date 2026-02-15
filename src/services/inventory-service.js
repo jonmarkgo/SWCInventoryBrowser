@@ -240,4 +240,62 @@ export async function getInventorySummary(ownerUid) {
     .orderBy('entity_type');
 }
 
+export async function getMultiOwnerInventory(ownerUids, entityType, { page = 1, limit = 50, search = '', ownerFilter = '' } = {}) {
+  const db = getDb();
+  const uids = ownerFilter ? [ownerFilter] : ownerUids;
+  const offset = (page - 1) * limit;
+
+  let query = db('inventory_cache')
+    .where('entity_type', entityType)
+    .whereIn('owner_uid', uids);
+
+  let countQuery = db('inventory_cache')
+    .where('entity_type', entityType)
+    .whereIn('owner_uid', uids);
+
+  if (search) {
+    query = query.where('entity_name', 'like', `%${search}%`);
+    countQuery = countQuery.where('entity_name', 'like', `%${search}%`);
+  }
+
+  const rows = await query.orderBy('entity_name').limit(limit).offset(offset);
+  const [{ total }] = await countQuery.count('* as total');
+
+  // Get the most recent cache time across all queried owners
+  const ageRow = await db('inventory_cache')
+    .where('entity_type', entityType)
+    .whereIn('owner_uid', uids)
+    .max('cached_at as last_cached')
+    .first();
+
+  return {
+    items: rows.map((r) => ({ ...r, entity_data: JSON.parse(r.entity_data) })),
+    total,
+    page,
+    pages: Math.ceil(total / limit),
+    cacheAge: ageRow?.last_cached ? new Date(ageRow.last_cached) : null,
+  };
+}
+
+export async function refreshAllOwners(ownerUids) {
+  const allResults = {};
+  for (const uid of ownerUids) {
+    console.log(`[inventory] Refreshing owner ${uid}...`);
+    const results = await refreshAll(uid);
+    allResults[uid] = results;
+  }
+  return allResults;
+}
+
+export async function getMultiOwnerSummary(ownerUids) {
+  if (ownerUids.length === 0) return [];
+  return getDb()('inventory_cache')
+    .whereIn('owner_uid', ownerUids)
+    .select('owner_uid', 'entity_type')
+    .count('* as count')
+    .max('cached_at as last_cached')
+    .groupBy('owner_uid', 'entity_type')
+    .orderBy(['owner_uid', 'entity_type']);
+}
+
 export { ENTITY_TYPES };

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import request from 'supertest';
-import { setupTestDb, teardownTestDb, cleanTables, createTestUser, createTestGroup } from '../setup.js';
+import { setupTestDb, teardownTestDb, cleanTables, createTestUser, createTestGroup, createTestOwner } from '../setup.js';
 import { createApp } from '../../src/app.js';
 import { addItemToGroup } from '../../src/services/group-service.js';
 import { setPermission } from '../../src/services/permission-service.js';
@@ -111,9 +111,8 @@ describe('E2E: App Routes', () => {
 
     describe('GET /inventory/:type', () => {
       it('renders inventory page for valid type', async () => {
-        // Inventory route requires a faction_uid in settings
-        const db = getDb();
-        await db('settings').insert({ key: 'faction_uid', value: '20:999' }).onConflict('key').merge();
+        // Inventory route requires at least one enabled owner
+        await createTestOwner({ uid: '20:999', name: 'Test Faction', enabled: 1 });
 
         const res = await agent.get('/inventory/ships');
         expect(res.status).toBe(200);
