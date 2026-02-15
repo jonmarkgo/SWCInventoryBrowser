@@ -245,6 +245,16 @@ document.addEventListener('DOMContentLoaded', () => {
       if (bulkGroupCount) {
         bulkGroupCount.textContent = selected.length;
       }
+
+      // Bulk remove from group modal
+      const bulkRemoveItems = document.getElementById('bulk-remove-items');
+      if (bulkRemoveItems) {
+        bulkRemoveItems.value = itemsJson;
+      }
+      const bulkRemoveCount = document.getElementById('bulk-remove-count');
+      if (bulkRemoveCount) {
+        bulkRemoveCount.textContent = selected.length;
+      }
     });
   });
 });

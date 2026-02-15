@@ -67,9 +67,12 @@
     <% if (items.length === 0) { %>
       <p class="text-muted p-3 mb-0">No items in this group. <a href="/inventory" class="text-info">Browse inventory</a> to add some.</p>
     <% } else { %>
-      <table class="table table-dark table-hover align-middle mb-0">
+      <table class="table table-dark table-hover align-middle mb-0" id="group-detail-table">
         <thead>
           <tr>
+            <th style="width:40px;">
+              <input type="checkbox" class="form-check-input" id="select-all-browse">
+            </th>
             <th style="width:40px;"></th>
             <th>Name</th>
             <th>Type</th>
@@ -80,6 +83,13 @@
         <tbody>
           <% items.forEach(item => { %>
             <tr>
+              <td>
+                <input type="checkbox" class="form-check-input bulk-select"
+                       data-entity-type="<%= item.entity_type %>"
+                       data-entity-uid="<%= item.entity_uid %>"
+                       data-entity-name="<%= item.entity_name %>"
+                       data-item-id="<%= item.id %>">
+              </td>
               <td>
                 <% if (item.entity_image) { %>
                   <img src="<%= item.entity_image %>" alt="" class="rounded" style="width:32px; height:32px; object-fit:cover;">
@@ -106,6 +116,131 @@
         </tbody>
       </table>
     <% } %>
+  </div>
+</div>
+
+<!-- Bulk Action Bar -->
+<div class="bulk-action-bar" id="bulk-action-bar" style="display:none;">
+  <div class="container-fluid d-flex align-items-center justify-content-between">
+    <span><strong id="bulk-count">0</strong> items selected</span>
+    <div class="d-flex gap-2">
+      <button class="btn btn-sm btn-outline-warning bulk-action-trigger" data-action="assign"
+              data-bs-toggle="modal" data-bs-target="#bulkActionModal">
+        <i class="bi bi-arrow-right-circle"></i> Assign
+      </button>
+      <button class="btn btn-sm btn-outline-info bulk-action-trigger" data-action="rename"
+              data-bs-toggle="modal" data-bs-target="#bulkActionModal">
+        <i class="bi bi-pencil"></i> Rename
+      </button>
+      <button class="btn btn-sm btn-outline-success bulk-action-trigger" data-action="makeover"
+              data-bs-toggle="modal" data-bs-target="#bulkActionModal">
+        <i class="bi bi-brush"></i> Makeover
+      </button>
+      <button class="btn btn-sm btn-outline-light bulk-action-trigger" data-action="tag"
+              data-bs-toggle="modal" data-bs-target="#bulkActionModal">
+        <i class="bi bi-tag"></i> Tag
+      </button>
+      <button class="btn btn-sm btn-outline-danger bulk-action-trigger" data-action="remove"
+              data-bs-toggle="modal" data-bs-target="#bulkRemoveModal">
+        <i class="bi bi-trash"></i> Remove
+      </button>
+      <button class="btn btn-sm btn-outline-secondary" id="bulk-deselect">
+        <i class="bi bi-x-lg"></i> Clear
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk Action Modal -->
+<div class="modal fade" id="bulkActionModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content bg-dark border-secondary">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title" id="bulkActionTitle">Bulk Action</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="/groups/<%= group.id %>/bulk-actions">
+        <div class="modal-body">
+          <input type="hidden" name="action" id="bulk-action-type">
+          <input type="hidden" name="items" id="bulk-action-items">
+          <p class="text-muted">Applying to <strong id="bulk-modal-count">0</strong> selected items</p>
+
+          <div id="bulk-assign-fields" style="display:none;">
+            <div class="mb-3">
+              <label class="form-label">Assignment Type</label>
+              <select name="assign_type" class="form-select bg-dark text-light border-secondary">
+                <option value="commander">Commander</option>
+                <option value="pilot">Pilot</option>
+                <option value="operator">Operator</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Character or Faction Name / UID</label>
+              <input type="text" class="form-control bg-dark text-light border-secondary"
+                     name="assign_to" placeholder="e.g., Roger Harp or 1:12345">
+            </div>
+          </div>
+
+          <div id="bulk-rename-fields" style="display:none;">
+            <div class="mb-3">
+              <label class="form-label">New Name</label>
+              <input type="text" class="form-control bg-dark text-light border-secondary"
+                     name="new_name" placeholder="Enter new name...">
+            </div>
+          </div>
+
+          <div id="bulk-makeover-fields" style="display:none;">
+            <div class="mb-3">
+              <label class="form-label">New Owner (Character or Faction Name / UID)</label>
+              <input type="text" class="form-control bg-dark text-light border-secondary"
+                     name="new_owner" placeholder="e.g., Rendili StarDrive or 20:502">
+            </div>
+          </div>
+
+          <div id="bulk-tag-fields" style="display:none;">
+            <div class="mb-3">
+              <label class="form-label">Tag</label>
+              <input type="text" class="form-control bg-dark text-light border-secondary"
+                     name="tag_value" placeholder="Enter tag name...">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Operation</label>
+              <select name="tag_action" class="form-select bg-dark text-light border-secondary">
+                <option value="add">Add Tag</option>
+                <option value="remove">Remove Tag</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-secondary">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-info">Execute on All</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk Remove from Group Modal -->
+<div class="modal fade" id="bulkRemoveModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content bg-dark border-secondary">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title">Remove from Group</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="/groups/<%= group.id %>/bulk-remove">
+        <div class="modal-body">
+          <input type="hidden" name="items" id="bulk-remove-items">
+          <p>Remove <strong id="bulk-remove-count">0</strong> items from "<%= group.name %>"?</p>
+          <p class="text-muted small">This only removes them from the group, not from your inventory.</p>
+        </div>
+        <div class="modal-footer border-secondary">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-danger">Remove All</button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
 
