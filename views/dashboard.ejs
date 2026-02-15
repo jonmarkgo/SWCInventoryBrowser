@@ -16,19 +16,26 @@
   </div>
   <div class="collapse" id="factionForm">
     <div class="card-body border-top border-secondary">
-      <form method="POST" action="/dashboard/faction" class="row g-2 align-items-end">
-        <div class="col-md-5">
-          <label for="faction_uid" class="form-label small text-muted">Faction UID</label>
-          <input type="text" class="form-control form-control-sm bg-dark text-light border-secondary" id="faction_uid" name="faction_uid" value="<%= factionUid || '' %>" placeholder="e.g. 20:123">
-        </div>
-        <div class="col-md-5">
-          <label for="faction_name" class="form-label small text-muted">Faction Name (optional)</label>
-          <input type="text" class="form-control form-control-sm bg-dark text-light border-secondary" id="faction_name" name="faction_name" value="<%= factionName || '' %>" placeholder="My Faction">
-        </div>
-        <div class="col-md-2">
-          <button type="submit" class="btn btn-sm btn-info w-100">Save</button>
-        </div>
-      </form>
+      <% if (factions.length > 0) { %>
+        <form method="POST" action="/dashboard/faction" class="row g-2 align-items-end">
+          <div class="col-md-9">
+            <label for="faction_selection" class="form-label small text-muted">Select Faction</label>
+            <select class="form-select form-select-sm bg-dark text-light border-secondary" id="faction_selection" name="faction_selection" required>
+              <option value="">Choose a faction...</option>
+              <% factions.forEach(f => { %>
+                <option value="<%= f.uid %>|<%= f.name %>" <%= f.uid === factionUid ? 'selected' : '' %>>
+                  <%= f.name %> (<%= f.uid %>)<%= f.primary ? ' - Primary' : '' %>
+                </option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <button type="submit" class="btn btn-sm btn-info w-100">Set Active</button>
+          </div>
+        </form>
+      <% } else { %>
+        <p class="text-muted small mb-0">Could not load faction list. Ensure the leader is authenticated.</p>
+      <% } %>
     </div>
   </div>
 </div>
